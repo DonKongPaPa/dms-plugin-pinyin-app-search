@@ -2,7 +2,7 @@
     "id": "pinyinAppSearch",
     "name": "Pinyin App Search",
     "description": "用拼音或首字母搜中文名应用：jsq / jisuanqi -> 计算器。纯运行时索引，不改任何 .desktop 文件。",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "author": "ray",
     "icon": "translate",

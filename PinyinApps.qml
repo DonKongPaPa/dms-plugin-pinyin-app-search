@@ -40,6 +40,11 @@ QtObject {
     function _loadSettings() {
         if (!pluginService)
             return;
+        // 首次运行默认常驻：DMS 的 getPluginTrigger() 用 `plugin.trigger || "!"`，
+        // 空 trigger 在 manifest 里会被回落成 "!"，那样注册表安装后打 jsq 什么都搜不到。
+        // 只在用户从未设置过时写一次，之后尊重用户的显式选择。
+        if (pluginService.loadPluginData(pluginId, "noTrigger", null) === null)
+            pluginService.savePluginData(pluginId, "noTrigger", true);
         maxResults = pluginService.loadPluginData(pluginId, "maxResults", 8);
         minQueryLength = pluginService.loadPluginData(pluginId, "minQueryLength", 2);
         matchGenericName = pluginService.loadPluginData(pluginId, "matchGenericName", false);
@@ -47,8 +52,9 @@ QtObject {
     }
 
     // 注意：QtObject 没有默认属性，子对象必须挂在 property 上
+    // pluginDataChanged 是 PluginService 的信号（SettingsData 没有这个信号）
     property Connections settingsConn: Connections {
-        target: SettingsData
+        target: root.pluginService
         function onPluginDataChanged(id) {
             if (id !== root.pluginId)
                 return;

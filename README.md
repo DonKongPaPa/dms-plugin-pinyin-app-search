@@ -56,14 +56,14 @@ python3 - <<'EOF'
 import json, pathlib
 p = pathlib.Path.home() / ".config/DankMaterialShell/plugin_settings.json"
 d = json.loads(p.read_text()) if p.exists() else {}
-d.setdefault("pinyinAppSearch", {}).update({"enabled": True, "noTrigger": True})
+d.setdefault("pinyinAppSearch", {})["enabled"] = True
 p.write_text(json.dumps(d, indent=2))
 EOF
 systemctl --user restart dms.service   # 新启用的插件需要重载 shell
 ```
 
-> `noTrigger: true` 是让结果常驻参与搜索的关键。DMS 的 `PluginService.getPluginTrigger()` 里
-> `plugin.trigger || "!"` 会把空串回落到 `"!"`，所以 manifest 里写空 trigger 不管用，必须落到 plugin_settings。
+> `noTrigger`（常驻参与搜索）由插件首次加载时自动写入，不需要手动设置。
+> 原因：DMS 的 `PluginService.getPluginTrigger()` 里 `plugin.trigger || "!"` 会把空串回落到 `"!"`，所以 manifest 写空 trigger 不管用。
 
 打开启动器，输入 `jsq`，应该能看到 **计算器**（带「插件」来源徽标）。
 
@@ -73,10 +73,15 @@ systemctl --user restart dms.service   # 新启用的插件需要重载 shell
 
 | 选项 | 默认 | 说明 |
 |---|---|---|
+| Always active (no trigger) | 开 | 结果常驻参与搜索；关掉则要打 trigger 才出现 |
 | 最多结果数 | 8 | 1–20 |
 | 最短查询长度 | 2 | DMS 本身在查询 <2 字符时不进入插件阶段，设 1 无效 |
 | 匹配类型名拼音 | 关 | 也索引 `GenericName`（如「媒体播放器」） |
 | 匹配描述拼音 | 关 | 也索引 `Comment`，容易出噪音 |
+
+> 插件首次加载会自动写入 `noTrigger: true`（只写一次，之后尊重你在设置里的选择）。
+> 这一步是必要的：DMS 的 `getPluginTrigger()` 用 `plugin.trigger || "!"` 兜底，manifest 里写空 trigger 会被回落成 `"!"`，
+> 那样从注册表安装后打 `jsq` 什么都不会出现。
 
 ## 已知限制（DMS 侧行为，插件无法绕过）
 
