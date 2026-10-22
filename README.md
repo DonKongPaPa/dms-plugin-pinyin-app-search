@@ -2,6 +2,8 @@
 
 给 [DankMaterialShell (DMS)](https://github.com/AvengeMedia/DankMaterialShell) 的启动器加上**拼音 / 首字母搜索中文应用名**的能力。
 
+![jsq → 计算器](assets/js-search.png)
+
 ```
 jsq       → 计算器
 jisuanqi  → 计算器
