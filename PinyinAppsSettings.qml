@@ -12,6 +12,10 @@ FocusScope {
 
     readonly property string pluginId: "pinyinAppSearch"
 
+    function tr(term) {
+        return I18n.trFor(pluginId, term);
+    }
+
     // ---- 本地副本：settings 变更后热更新，避免 checked 绑定被内部 toggle 打断 ----
     property bool noTrigger: true
     property string trigger: ""
@@ -57,7 +61,7 @@ FocusScope {
 
         StyledText {
             width: parent.width
-            text: "Pinyin App Search"
+            text: root.tr("Pinyin App Search")
             font.pixelSize: Theme.fontSizeLarge
             font.weight: Font.Medium
             color: Theme.surfaceText
@@ -68,7 +72,7 @@ FocusScope {
             wrapMode: Text.WordWrap
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.surfaceVariantText
-            text: "Type pinyin or initials to find apps with Chinese names (jsq → 计算器). The index is built at runtime from DesktopEntries, so no .desktop file is modified and removing the plugin restores everything."
+            text: root.tr("Type pinyin or initials to find apps with Chinese names (jsq finds 计算器). The index is built at runtime, so no .desktop file is modified and removing the plugin restores everything.")
         }
 
         Rectangle {
@@ -80,8 +84,8 @@ FocusScope {
 
         DankToggle {
             width: parent.width
-            text: "Always active (no trigger)"
-            description: root.noTrigger ? "Results appear alongside regular apps." : "Results only appear after typing the trigger below."
+            text: root.tr("Always active (no trigger)")
+            description: root.noTrigger ? root.tr("Results appear alongside regular apps.") : root.tr("Results only appear after typing the trigger below.")
             checked: root.noTrigger
             onToggled: isChecked => {
                 root.noTrigger = isChecked;
@@ -96,7 +100,7 @@ FocusScope {
 
             StyledText {
                 width: parent.width
-                text: "Trigger"
+                text: root.tr("Trigger")
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceText
             }
@@ -121,7 +125,7 @@ FocusScope {
                 spacing: Theme.spacingS
 
                 StyledText {
-                    text: "Max results: " + root.maxResults
+                    text: root.tr("Max results: %1").arg(root.maxResults)
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceText
                 }
@@ -145,7 +149,7 @@ FocusScope {
                 spacing: Theme.spacingS
 
                 StyledText {
-                    text: "Min query length: " + root.minQueryLength
+                    text: root.tr("Min query length: %1").arg(root.minQueryLength)
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceText
                 }
@@ -171,13 +175,13 @@ FocusScope {
             wrapMode: Text.WordWrap
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.surfaceVariantText
-            text: "DMS skips plugin results for queries shorter than 2 characters, and outside the All and Plugins tabs."
+            text: root.tr("DMS skips plugin results for queries shorter than 2 characters, and outside the All and Plugins tabs.")
         }
 
         DankToggle {
             width: parent.width
-            text: "Also match the generic name"
-            description: "Indexes GenericName too, e.g. 媒体播放器 for media players."
+            text: root.tr("Also match the generic name")
+            description: root.tr("Indexes the generic name too, e.g. 媒体播放器 for media players.")
             checked: root.matchGenericName
             onToggled: isChecked => {
                 root.matchGenericName = isChecked;
@@ -187,8 +191,8 @@ FocusScope {
 
         DankToggle {
             width: parent.width
-            text: "Also match the comment"
-            description: "Indexes the desktop comment. Noisier, so it is off by default."
+            text: root.tr("Also match the comment")
+            description: root.tr("Indexes the desktop comment. Noisier, so it is off by default.")
             checked: root.matchComment
             onToggled: isChecked => {
                 root.matchComment = isChecked;

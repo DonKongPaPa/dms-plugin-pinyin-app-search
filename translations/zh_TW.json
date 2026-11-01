@@ -1,0 +1,17 @@
+{
+  "pinyinAppSearch": {
+    "Pinyin App Search": "拼音應用搜尋",
+    "Type pinyin or initials to find apps with Chinese names (jsq finds 计算器). The index is built at runtime, so no .desktop file is modified and removing the plugin restores everything.": "用拼音或首字母搜尋中文名稱的應用（輸入 jsq 就能找到「計算器」）。索引在執行時建立，不會修改任何 .desktop 檔案，移除外掛即完全還原。",
+    "Always active (no trigger)": "始終生效（無需觸發詞）",
+    "Results appear alongside regular apps.": "結果與一般應用一起顯示在搜尋列表中。",
+    "Results only appear after typing the trigger below.": "只有先輸入下方觸發詞，才會顯示結果。",
+    "Trigger": "觸發詞",
+    "Max results: %1": "最多結果數：%1",
+    "Min query length: %1": "最短查詢長度：%1",
+    "DMS skips plugin results for queries shorter than 2 characters, and outside the All and Plugins tabs.": "DMS 在查詢少於 2 個字元時，以及「全部」「外掛」以外的分頁中，都不會列出外掛結果。",
+    "Also match the generic name": "同時比對類型名稱",
+    "Indexes the generic name too, e.g. 媒体播放器 for media players.": "也比對應用的類型名稱，例如「媒體播放器」。",
+    "Also match the comment": "同時比對描述",
+    "Indexes the desktop comment. Noisier, so it is off by default.": "也比對 desktop 檔案的描述欄位。雜訊較多，預設關閉。"
+  }
+}

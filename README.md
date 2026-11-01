@@ -69,7 +69,7 @@ systemctl --user restart dms.service   # 新启用的插件需要重载 shell
 
 ## 配置
 
-设置页可调：
+设置页可调（界面跟随系统语言，`LANG=zh_CN` 自动显示中文，其它环境回落英文）：
 
 | 选项 | 默认 | 说明 |
 |---|---|---|
@@ -115,6 +115,19 @@ python3 -m venv .venv && .venv/bin/pip install pypinyin
 cp *.qml data/*.js ~/.config/DankMaterialShell/plugins/pinyinAppSearch/ 2>/dev/null
 systemctl --user restart dms.service
 ```
+
+### 界面翻译
+
+设置页文案走 DMS 的插件翻译机制，不硬编码中文：
+
+```qml
+function tr(term) { return I18n.trFor("pinyinAppSearch", term); }
+// text: root.tr("Always active (no trigger)")
+```
+
+`translations/zh_CN.json`（以及 `zh_TW.json`）形如 `{"pinyinAppSearch": {"英文源串": "中文"}}`，
+DMS 按 `I18n.localeCandidates()`（`zh_CN` → `zh-CN` → `zh`）挑文件；找不到就用英文源串。
+加新文案时必须同步三个地方：QML 里的 `tr("…")`、两个 JSON 的键（CI 不校验，自己 `python3 -c` 比一下键集合）。
 
 查看加载错误：
 

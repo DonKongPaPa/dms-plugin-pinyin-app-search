@@ -9,9 +9,12 @@ SETTINGS="${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugin_settings.js
 echo "==> 安装到 $DEST"
 mkdir -p "$DEST"
 cp -a "$SRC"/plugin.json "$SRC"/*.qml "$DEST"/
-mkdir -p "$DEST/data" "$DEST/tools"
+mkdir -p "$DEST/data" "$DEST/tools" "$DEST/translations"
 cp -a "$SRC"/data/. "$DEST"/data/
 [ -d "$SRC/tools" ] && cp -a "$SRC"/tools/. "$DEST"/tools/
+if [ -d "$SRC/translations" ]; then
+    cp -a "$SRC"/translations/. "$DEST"/translations/
+fi
 
 echo "==> 启用 (plugin_settings.json)"
 python3 - "$SETTINGS" <<'PY'
