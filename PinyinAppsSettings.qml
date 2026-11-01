@@ -1,203 +1,96 @@
 import QtQuick
 import qs.Common
+import qs.Services
 import qs.Widgets
+import qs.Modules.Plugins
 
-FocusScope {
+// 用 DMS 官方插件设置组件（PluginSettings / ToggleSetting / SliderSetting / ListSettingWithInput）。
+// 值的加载与保存由框架处理：它会在 pluginService 注入后才调 loadValue()，
+// 自己写 Component.onCompleted 读设置会读不到（pluginService 在 Loader.onLoaded 才赋值）。
+PluginSettings {
     id: root
 
-    property var pluginService: null
-
-    implicitHeight: column.implicitHeight
-    height: implicitHeight
-
-    readonly property string pluginId: "pinyinAppSearch"
+    pluginId: "pinyinAppSearch"
 
     function tr(term) {
         return I18n.trFor(pluginId, term);
     }
 
-    // ---- 本地副本：settings 变更后热更新，避免 checked 绑定被内部 toggle 打断 ----
-    property bool noTrigger: true
-    property string trigger: ""
-    property int maxResults: 8
-    property int minQueryLength: 2
-    property bool matchGenericName: false
-    property bool matchComment: false
-
-    function load(key, fallback) {
-        return pluginService ? pluginService.loadPluginData(pluginId, key, fallback) : fallback;
+    StyledText {
+        width: parent.width
+        text: root.tr("Type pinyin, initials, or a mix of both. jsq, jisq and jisuanqi all find 计算器. The index is built at runtime, so no .desktop file is modified.")
+        font.pixelSize: Theme.fontSizeSmall
+        color: Theme.surfaceVariantText
+        wrapMode: Text.WordWrap
     }
 
-    function save(key, value) {
-        if (pluginService)
-            pluginService.savePluginData(pluginId, key, value);
+    ToggleSetting {
+        settingKey: "noTrigger"
+        label: root.tr("Always active (no trigger)")
+        description: root.tr("Results appear alongside regular apps. Turn it off to require the trigger below.")
+        defaultValue: true
     }
 
-    function reload() {
-        noTrigger = load("noTrigger", true);
-        trigger = load("trigger", "");
-        maxResults = load("maxResults", 8);
-        minQueryLength = load("minQueryLength", 2);
-        matchGenericName = load("matchGenericName", false);
-        matchComment = load("matchComment", false);
+    StringSetting {
+        settingKey: "trigger"
+        label: root.tr("Trigger")
+        description: root.tr("Only used when always-active is off. Type this prefix to see this plugin's results.")
+        placeholder: "!"
+        defaultValue: "!"
     }
 
-    Component.onCompleted: reload()
-
-    Connections {
-        target: root.pluginService
-        function onPluginDataChanged(id) {
-            if (id === root.pluginId)
-                root.reload();
-        }
+    SliderSetting {
+        settingKey: "maxResults"
+        label: root.tr("Max results")
+        description: root.tr("How many matches this plugin contributes to the list.")
+        minimum: 1
+        maximum: 20
+        defaultValue: 8
     }
 
-    Column {
-        id: column
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: Theme.spacingM
-        spacing: Theme.spacingL
+    SliderSetting {
+        settingKey: "minQueryLength"
+        label: root.tr("Min query length")
+        description: root.tr("DMS does not run launcher plugins for queries shorter than 2 characters, so 1 has no effect there.")
+        minimum: 1
+        maximum: 5
+        defaultValue: 2
+    }
 
-        StyledText {
-            width: parent.width
-            text: root.tr("Pinyin App Search")
-            font.pixelSize: Theme.fontSizeLarge
-            font.weight: Font.Medium
-            color: Theme.surfaceText
-        }
+    ToggleSetting {
+        settingKey: "matchGenericName"
+        label: root.tr("Also match the generic name")
+        description: root.tr("Indexes the generic name too, e.g. 媒体播放器 for media players.")
+        defaultValue: false
+    }
 
-        StyledText {
-            width: parent.width
-            wrapMode: Text.WordWrap
-            font.pixelSize: Theme.fontSizeSmall
-            color: Theme.surfaceVariantText
-            text: root.tr("Type pinyin or initials to find apps with Chinese names (jsq finds 计算器). The index is built at runtime, so no .desktop file is modified and removing the plugin restores everything.")
-        }
+    ToggleSetting {
+        settingKey: "matchComment"
+        label: root.tr("Also match the comment")
+        description: root.tr("Indexes the desktop comment. Noisier, so it is off by default.")
+        defaultValue: false
+    }
 
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.outlineButton
-            opacity: 0.3
-        }
-
-        DankToggle {
-            width: parent.width
-            text: root.tr("Always active (no trigger)")
-            description: root.noTrigger ? root.tr("Results appear alongside regular apps.") : root.tr("Results only appear after typing the trigger below.")
-            checked: root.noTrigger
-            onToggled: isChecked => {
-                root.noTrigger = isChecked;
-                save("noTrigger", isChecked);
+    ListSettingWithInput {
+        settingKey: "aliases"
+        label: root.tr("Custom aliases")
+        description: root.tr("Give an app your own shortcut. Left is the alias (letters and digits only), right is an app name or desktop id.")
+        fields: [
+            {
+                id: "alias",
+                label: root.tr("Alias"),
+                placeholder: "jisq2",
+                width: 160,
+                required: true
+            },
+            {
+                id: "target",
+                label: root.tr("App"),
+                placeholder: "计算器",
+                width: 320,
+                required: true
             }
-        }
-
-        Column {
-            width: parent.width
-            spacing: Theme.spacingS
-            visible: !root.noTrigger
-
-            StyledText {
-                width: parent.width
-                text: root.tr("Trigger")
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.surfaceText
-            }
-
-            DankTextField {
-                id: triggerField
-                width: Math.min(parent.width, 200)
-                height: 40
-                text: root.trigger
-                placeholderText: "!"
-                onTextEdited: {
-                    root.trigger = text.trim();
-                    save("trigger", root.trigger);
-                }
-            }
-        }
-
-        Row {
-            spacing: Theme.spacingM
-
-            Column {
-                spacing: Theme.spacingS
-
-                StyledText {
-                    text: root.tr("Max results: %1").arg(root.maxResults)
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceText
-                }
-
-                DankTextField {
-                    id: maxResultsField
-                    width: 120
-                    height: 40
-                    text: String(root.maxResults)
-                    onTextEdited: {
-                        const v = parseInt(text, 10);
-                        if (v >= 1 && v <= 20) {
-                            root.maxResults = v;
-                            save("maxResults", v);
-                        }
-                    }
-                }
-            }
-
-            Column {
-                spacing: Theme.spacingS
-
-                StyledText {
-                    text: root.tr("Min query length: %1").arg(root.minQueryLength)
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceText
-                }
-
-                DankTextField {
-                    id: minQueryField
-                    width: 120
-                    height: 40
-                    text: String(root.minQueryLength)
-                    onTextEdited: {
-                        const v = parseInt(text, 10);
-                        if (v >= 1 && v <= 5) {
-                            root.minQueryLength = v;
-                            save("minQueryLength", v);
-                        }
-                    }
-                }
-            }
-        }
-
-        StyledText {
-            width: parent.width
-            wrapMode: Text.WordWrap
-            font.pixelSize: Theme.fontSizeSmall
-            color: Theme.surfaceVariantText
-            text: root.tr("DMS skips plugin results for queries shorter than 2 characters, and outside the All and Plugins tabs.")
-        }
-
-        DankToggle {
-            width: parent.width
-            text: root.tr("Also match the generic name")
-            description: root.tr("Indexes the generic name too, e.g. 媒体播放器 for media players.")
-            checked: root.matchGenericName
-            onToggled: isChecked => {
-                root.matchGenericName = isChecked;
-                save("matchGenericName", isChecked);
-            }
-        }
-
-        DankToggle {
-            width: parent.width
-            text: root.tr("Also match the comment")
-            description: root.tr("Indexes the desktop comment. Noisier, so it is off by default.")
-            checked: root.matchComment
-            onToggled: isChecked => {
-                root.matchComment = isChecked;
-                save("matchComment", isChecked);
-            }
-        }
+        ]
+        defaultValue: []
     }
 }

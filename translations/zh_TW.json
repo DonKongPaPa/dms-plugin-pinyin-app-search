@@ -1,17 +1,21 @@
 {
   "pinyinAppSearch": {
-    "Pinyin App Search": "拼音應用搜尋",
-    "Type pinyin or initials to find apps with Chinese names (jsq finds 计算器). The index is built at runtime, so no .desktop file is modified and removing the plugin restores everything.": "用拼音或首字母搜尋中文名稱的應用（輸入 jsq 就能找到「計算器」）。索引在執行時建立，不會修改任何 .desktop 檔案，移除外掛即完全還原。",
+    "Type pinyin, initials, or a mix of both. jsq, jisq and jisuanqi all find 计算器. The index is built at runtime, so no .desktop file is modified.": "用拼音、首字母或兩者混拼。jsq、jisq、jisuanqi 都能找到「計算器」。索引在執行時建立，不會修改任何 .desktop 檔案。",
     "Always active (no trigger)": "始終生效（無需觸發詞）",
-    "Results appear alongside regular apps.": "結果與一般應用一起顯示在搜尋列表中。",
-    "Results only appear after typing the trigger below.": "只有先輸入下方觸發詞，才會顯示結果。",
+    "Results appear alongside regular apps. Turn it off to require the trigger below.": "結果與一般應用一起顯示。關閉後需先輸入下方觸發詞。",
     "Trigger": "觸發詞",
-    "Max results: %1": "最多結果數：%1",
-    "Min query length: %1": "最短查詢長度：%1",
-    "DMS skips plugin results for queries shorter than 2 characters, and outside the All and Plugins tabs.": "DMS 在查詢少於 2 個字元時，以及「全部」「外掛」以外的分頁中，都不會列出外掛結果。",
+    "Only used when always-active is off. Type this prefix to see this plugin's results.": "只在關閉「始終生效」時使用。在啟動器輸入這個前綴才會顯示本外掛的結果。",
+    "Max results": "最多結果數",
+    "How many matches this plugin contributes to the list.": "本外掛最多貢獻幾筆比對結果。",
+    "Min query length": "最短查詢長度",
+    "DMS does not run launcher plugins for queries shorter than 2 characters, so 1 has no effect there.": "DMS 在查詢少於 2 個字元時不會執行啟動器外掛，所以填 1 在那裡沒有作用。",
     "Also match the generic name": "同時比對類型名稱",
     "Indexes the generic name too, e.g. 媒体播放器 for media players.": "也比對應用的類型名稱，例如「媒體播放器」。",
     "Also match the comment": "同時比對描述",
-    "Indexes the desktop comment. Noisier, so it is off by default.": "也比對 desktop 檔案的描述欄位。雜訊較多，預設關閉。"
+    "Indexes the desktop comment. Noisier, so it is off by default.": "也比對 desktop 檔案的描述欄位。雜訊較多，預設關閉。",
+    "Custom aliases": "自訂別名",
+    "Give an app your own shortcut. Left is the alias (letters and digits only), right is an app name or desktop id.": "給應用程式自訂捷徑詞：左邊是別名（僅字母與數字），右邊是應用名稱或 desktop id。",
+    "Alias": "別名",
+    "App": "應用程式"
   }
 }

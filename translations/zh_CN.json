@@ -1,17 +1,21 @@
 {
   "pinyinAppSearch": {
-    "Pinyin App Search": "拼音应用搜索",
-    "Type pinyin or initials to find apps with Chinese names (jsq finds 计算器). The index is built at runtime, so no .desktop file is modified and removing the plugin restores everything.": "用拼音或首字母搜中文名应用（打 jsq 就能找到「计算器」）。索引在运行时生成，不改任何 .desktop 文件，删除插件即完全还原。",
+    "Type pinyin, initials, or a mix of both. jsq, jisq and jisuanqi all find 计算器. The index is built at runtime, so no .desktop file is modified.": "用拼音、首字母或两者混拼。jsq、jisq、jisuanqi 都能找到「计算器」。索引在运行时生成，不修改任何 .desktop 文件。",
     "Always active (no trigger)": "始终生效（无需触发词）",
-    "Results appear alongside regular apps.": "结果与普通应用一起出现在搜索列表里。",
-    "Results only appear after typing the trigger below.": "只有先输入下方触发词，才会显示结果。",
+    "Results appear alongside regular apps. Turn it off to require the trigger below.": "结果与普通应用一起出现。关掉后需要先输入下方触发词。",
     "Trigger": "触发词",
-    "Max results: %1": "最多结果数：%1",
-    "Min query length: %1": "最短查询长度：%1",
-    "DMS skips plugin results for queries shorter than 2 characters, and outside the All and Plugins tabs.": "DMS 在查询少于 2 个字符时、以及「全部」「插件」以外的标签页里，都不会列出插件结果。",
+    "Only used when always-active is off. Type this prefix to see this plugin's results.": "只在关闭「始终生效」时使用。在启动器里输入这个前缀才会显示本插件的结果。",
+    "Max results": "最多结果数",
+    "How many matches this plugin contributes to the list.": "本插件最多贡献多少条匹配结果。",
+    "Min query length": "最短查询长度",
+    "DMS does not run launcher plugins for queries shorter than 2 characters, so 1 has no effect there.": "DMS 在查询少于 2 个字符时不会运行启动器插件，所以填 1 在那里没有效果。",
     "Also match the generic name": "同时匹配类型名",
     "Indexes the generic name too, e.g. 媒体播放器 for media players.": "也索引应用的类型名，例如「媒体播放器」。",
     "Also match the comment": "同时匹配描述",
-    "Indexes the desktop comment. Noisier, so it is off by default.": "也索引 desktop 文件的描述字段。噪音较多，默认关闭。"
+    "Indexes the desktop comment. Noisier, so it is off by default.": "也索引 desktop 文件的描述字段。噪音较多，默认关闭。",
+    "Custom aliases": "自定义别名",
+    "Give an app your own shortcut. Left is the alias (letters and digits only), right is an app name or desktop id.": "给应用起你自己的快捷词：左边是别名（仅字母和数字），右边是应用名或 desktop id。",
+    "Alias": "别名",
+    "App": "应用"
   }
 }

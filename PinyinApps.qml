@@ -4,8 +4,9 @@ import Quickshell.Io
 import qs.Common
 import qs.Services
 import "./data/pinyin-dict.js" as PinyinDict
+import "./data/match.js" as Match
 
-// 拼音应用搜索 —— 把「拼音/首字母」查询映射到已安装应用的 DesktopEntry。
+// 拼音应用搜索 —— 把「拼音/首字母/混拼」查询映射到已安装应用的 DesktopEntry。
 // 不修改任何 .desktop 文件：纯运行时索引，插件卸载即完全还原。
 QtObject {
     id: root
@@ -22,10 +23,11 @@ QtObject {
     property int minQueryLength: 2
     property bool matchGenericName: false
     property bool matchComment: false
+    property var aliases: []
 
     // ---- 内部状态 ----
     property var _charReadings: ({})   // 汉字 -> [读音...]（首个为常用读音）
-    property var _index: []            // [{ id, entry, name, generic, comment, icon, variants: [{py, ini}] }]
+    property var _index: []            // [{ id, entry, name, variants, sylls, ... }]
     property var _byId: ({})
     property bool _ready: false
     property string _stats: ""
@@ -45,10 +47,16 @@ QtObject {
         // 只在用户从未设置过时写一次，之后尊重用户的显式选择。
         if (pluginService.loadPluginData(pluginId, "noTrigger", null) === null)
             pluginService.savePluginData(pluginId, "noTrigger", true);
-        maxResults = pluginService.loadPluginData(pluginId, "maxResults", 8);
-        minQueryLength = pluginService.loadPluginData(pluginId, "minQueryLength", 2);
-        matchGenericName = pluginService.loadPluginData(pluginId, "matchGenericName", false);
-        matchComment = pluginService.loadPluginData(pluginId, "matchComment", false);
+
+        const maxR = parseInt(pluginService.loadPluginData(pluginId, "maxResults", 8), 10);
+        const minL = parseInt(pluginService.loadPluginData(pluginId, "minQueryLength", 2), 10);
+        maxResults = (maxR >= 1 && maxR <= 20) ? maxR : 8;
+        minQueryLength = (minL >= 1 && minL <= 5) ? minL : 2;
+        matchGenericName = pluginService.loadPluginData(pluginId, "matchGenericName", false) === true;
+        matchComment = pluginService.loadPluginData(pluginId, "matchComment", false) === true;
+
+        const rawAliases = pluginService.loadPluginData(pluginId, "aliases", []);
+        aliases = Array.isArray(rawAliases) ? rawAliases : [];
     }
 
     // 注意：QtObject 没有默认属性，子对象必须挂在 property 上
@@ -90,51 +98,8 @@ QtObject {
         _stats = Object.keys(map).length + " 字";
     }
 
-    function _isCjk(ch) {
-        const c = ch.codePointAt(0);
-        return (c >= 0x3400 && c <= 0x4DBF) || (c >= 0x4E00 && c <= 0x9FFF);
-    }
-
-    // 把名字展开成若干候选 {py, ini}（多音字组合，最多 cap 个）
-    function _variants(text, cap) {
-        const chars = String(text || "").split("");
-        let combos = [{
-            py: "",
-            ini: ""
-        }];
-
-        for (let i = 0; i < chars.length; i++) {
-            const ch = chars[i];
-            let options;
-            if (_isCjk(ch)) {
-                const readings = _charReadings[ch];
-                if (!readings)
-                    continue;               // 字典里没有的生僻字 -> 跳过，不影响其余部分
-                options = readings.slice(0, 3);
-            } else if (/[a-zA-Z0-9]/.test(ch)) {
-                options = [ch.toLowerCase()];
-            } else {
-                continue;                   // 空格、标点、符号忽略
-            }
-
-            const next = [];
-            for (let c = 0; c < combos.length; c++) {
-                for (let o = 0; o < options.length; o++) {
-                    next.push({
-                        py: combos[c].py + options[o],
-                        ini: combos[c].ini + options[o].charAt(0)
-                    });
-                    if (next.length >= cap)
-                        break;
-                }
-                if (next.length >= cap)
-                    break;
-            }
-            combos = next;
-            if (combos.length === 0)
-                return [];
-        }
-        return combos;
+    function _hasCjk(text) {
+        return /[\u3400-\u9fff]/.test(String(text || ""));
     }
 
     // ---------------- 索引 ----------------
@@ -143,6 +108,7 @@ QtObject {
         const entries = (DesktopEntries.applications && DesktopEntries.applications.values) || [];
         const index = [];
         const byId = {};
+        const targets = [];                 // 供别名解析：[{ id, name, item }]
 
         for (let i = 0; i < entries.length; i++) {
             const app = entries[i];
@@ -150,17 +116,14 @@ QtObject {
                 continue;
             const name = app.name || "";
             const generic = app.genericName || "";
-            const cjkInName = /[\u3400-\u9fff]/.test(name);
-            const cjkInGeneric = matchGenericName && /[\u3400-\u9fff]/.test(generic);
-            if (!cjkInName && !cjkInGeneric)
-                continue;                   // 纯英文名的应用交给原生搜索
+            const cjkInName = _hasCjk(name);
+            const cjkInGeneric = matchGenericName && _hasCjk(generic);
 
-            let variants = cjkInName ? _variants(name, 6) : [];
+            let variants = [];
+            if (cjkInName)
+                variants = Match.buildVariants(name, _charReadings, 6);
             if (cjkInGeneric)
-                variants = variants.concat(_variants(generic, 3));
-            variants = _dedupeVariants(variants);
-            if (variants.length === 0)
-                continue;
+                variants = variants.concat(Match.buildVariants(generic, _charReadings, 3));
 
             const item = {
                 id: app.id,
@@ -170,28 +133,48 @@ QtObject {
                 comment: app.comment || "",
                 icon: app.icon || "",
                 keywords: (app.keywords || []).map(k => String(k).toLowerCase()),
-                variants: variants
+                variants: Match.dedupeVariants(variants),
+                sylls: Match.syllables(name, _charReadings),
+                cjk: cjkInName || cjkInGeneric
             };
             index.push(item);
             byId[app.id] = item;
+            targets.push({
+                id: item.id,
+                name: item.name,
+                item: item
+            });
+        }
+
+        // 用户自定义别名：alias -> 应用（应用名或 desktop id）
+        let aliasCount = 0;
+        for (let a = 0; a < aliases.length; a++) {
+            const entry = aliases[a];
+            if (!entry)
+                continue;
+            const aliasKey = Match.normalizeAlias(entry.alias);
+            if (!aliasKey)
+                continue;
+            const pos = Match.findAliasTarget(targets.map(t => ({
+                id: t.id,
+                name: t.name
+            })), entry.target);
+            if (pos < 0)
+                continue;
+            const target = targets[pos].item;
+            target.variants = target.variants.concat([{
+                py: aliasKey,
+                ini: aliasKey,
+                alias: true
+            }]);
+            if (!target.sylls.length)
+                target.sylls = aliasKey.split("");
+            aliasCount++;
         }
 
         _index = index;
         _byId = byId;
-        _stats = index.length + " 个中文应用";
-    }
-
-    function _dedupeVariants(variants) {
-        const seen = {};
-        const out = [];
-        for (let i = 0; i < variants.length; i++) {
-            const v = variants[i];
-            if (!v.py || seen[v.py])
-                continue;
-            seen[v.py] = true;
-            out.push(v);
-        }
-        return out;
+        _stats = index.length + " 个应用 / " + aliasCount + " 别名";
     }
 
     // 原生搜索（AppSearchService）会不会自己命中？命中就别重复展示
@@ -211,33 +194,10 @@ QtObject {
         return false;
     }
 
-    function _scoreVariants(variants, q) {
-        let best = 0;
-        for (let i = 0; i < variants.length; i++) {
-            const v = variants[i];
-            let s = 0;
-            if (v.ini === q)
-                s = 1000;
-            else if (v.ini.startsWith(q))
-                s = 960;
-            else if (v.py === q)
-                s = 940;
-            else if (v.py.startsWith(q))
-                s = 920;
-            else if (v.ini.includes(q))
-                s = 880;
-            else if (v.py.includes(q))
-                s = 850;
-            if (s > best)
-                best = s;
-        }
-        return best;
-    }
-
     // ---------------- 启动器接口 ----------------
 
     function getItems(query) {
-        const q = String(query || "").toLowerCase().replace(/[\s\-_]+/g, "");
+        const q = Match.normalizeQuery(query);
         if (!_ready || q.length < minQueryLength)
             return [];
         if (!/[a-z0-9]/.test(q))
@@ -246,9 +206,16 @@ QtObject {
         const hits = [];
         for (let i = 0; i < _index.length; i++) {
             const item = _index[i];
-            if (_nativeHits(item, q))
-                continue;
-            const score = _scoreVariants(item.variants, q);
+
+            // 自定义别名优先，且不受「原生已命中就跳过」的限制（用户是显式指定）
+            let score = Match.aliasScore(item.variants, q);
+            if (score === 0) {
+                if (_nativeHits(item, q))
+                    continue;
+                score = Match.variantScore(item.variants, q);
+                if (score === 0)
+                    score = Match.hybridScore(item.sylls, q);   // 混拼兜底：jisq -> 计算器
+            }
             if (score > 0)
                 hits.push({
                     item: item,
@@ -267,7 +234,7 @@ QtObject {
         const out = [];
         for (let i = 0; i < hits.length && i < limit; i++) {
             const item = hits[i].item;
-            const subtitle = item.generic || item.comment || hits[i].item.id;
+            const subtitle = item.generic || item.comment || item.id;
             out.push({
                 name: item.name,
                 icon: item.icon || "application-x-executable",

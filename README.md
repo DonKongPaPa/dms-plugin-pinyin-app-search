@@ -5,12 +5,17 @@
 ![jsq → 计算器](assets/js-search.png)
 
 ```
-jsq       → 计算器
-jisuanqi  → 计算器
+jsq       → 计算器      （首字母）
+jisuanqi  → 计算器      （全拼）
+jisq      → 计算器      （混拼：ji + s + q）
 wenjian   → 文件
 wpswz     → WPS 文字
 hshwk     → 黑神话：悟空
+csq       → 计算器      （自定义别名）
 ```
+
+匹配顺序：自定义别名 → 首字母（完全/前缀）→ 全拼（完全/前缀/包含）→ **逐字混拼**（每个音节只取前几个字母）。
+最后一级让你可以按「想到哪打到哪」的方式输入，`jisq`、`jisuanq`、`wsz` 这类都能命中。
 
 **不改任何 `.desktop` 文件**：索引在运行时从 `DesktopEntries` 生成，卸载插件即完全还原，升级 DMS / 装删应用都无需维护。
 
@@ -73,11 +78,25 @@ systemctl --user restart dms.service   # 新启用的插件需要重载 shell
 
 | 选项 | 默认 | 说明 |
 |---|---|---|
-| Always active (no trigger) | 开 | 结果常驻参与搜索；关掉则要打 trigger 才出现 |
-| 最多结果数 | 8 | 1–20 |
+| 始终生效（无需触发词） | 开 | 结果常驻参与搜索；关掉则要打 trigger 才出现 |
+| 触发词 | `!` | 仅在上一条关闭时使用 |
+| 最多结果数 | 8 | 1–20 滑块 |
 | 最短查询长度 | 2 | DMS 本身在查询 <2 字符时不进入插件阶段，设 1 无效 |
-| 匹配类型名拼音 | 关 | 也索引 `GenericName`（如「媒体播放器」） |
-| 匹配描述拼音 | 关 | 也索引 `Comment`，容易出噪音 |
+| 同时匹配类型名 | 关 | 也索引 `GenericName`（如「媒体播放器」） |
+| 同时匹配描述 | 关 | 也索引 `Comment`，容易出噪音 |
+| 自定义别名 | 空 | 别名 → 应用名/desktop id，见下 |
+
+### 自定义别名
+
+给任何应用起自己的快捷词（也用来纠正自动拼音读错的字）。设置页 →「自定义别名」→ 左边填别名、右边填应用名或 desktop id：
+
+| 别名 | 应用 |
+|---|---|
+| `csq` | `计算器` |
+| `bt` | `Bitwarden` |
+| `hsh` | `org.gnome.Calculator`（desktop id 也行） |
+
+别名优先级最高（1040 分，高于一切自动匹配），且不受「原生已能命中就跳过」的限制 —— 你显式指定的一定会出现。
 
 > 插件首次加载会自动写入 `noTrigger: true`（只写一次，之后尊重你在设置里的选择）。
 > 这一步是必要的：DMS 的 `getPluginTrigger()` 用 `plugin.trigger || "!"` 兜底，manifest 里写空 trigger 会被回落成 `"!"`，
@@ -128,6 +147,35 @@ function tr(term) { return I18n.trFor("pinyinAppSearch", term); }
 `translations/zh_CN.json`（以及 `zh_TW.json`）形如 `{"pinyinAppSearch": {"英文源串": "中文"}}`，
 DMS 按 `I18n.localeCandidates()`（`zh_CN` → `zh-CN` → `zh`）挑文件；找不到就用英文源串。
 加新文案时必须同步三个地方：QML 里的 `tr("…")`、两个 JSON 的键（CI 不校验，自己 `python3 -c` 比一下键集合）。
+
+### 匹配引擎与单测
+
+纯逻辑全在 `data/match.js`（不依赖 QML，`module.exports` 兜底），所以能直接用 node 跑：
+
+```bash
+node tools/test_match.js        # 15 条匹配用例 + 别名/目标解析
+```
+
+QML 侧只做「取数据 → 调 match.js → 拼 item」。改匹配规则时先跑单测，别在启动器里试。
+
+### 设置页的坑（重要）
+
+插件设置组件是由 `PluginListItem.qml` 的 `Loader` 在 **`onLoaded`** 里才拿到 `pluginService` 的，
+所以在自己写的设置页里用 `Component.onCompleted: load(...)` 永远读到 fallback ——
+表现为「开关点了看起来生效、重开设置页又变回默认」，值其实写进文件了但界面不显示。
+
+用官方的 `PluginSettings` + `ToggleSetting` / `SliderSetting` / `StringSetting` / `ListSettingWithInput`
+就不会踩：它们内部 `loadValue()` 在 `pluginService` 到达后才跑。
+
+```qml
+import qs.Modules.Plugins
+
+PluginSettings {
+    pluginId: "pinyinAppSearch"
+    ToggleSetting { settingKey: "noTrigger"; label: "..."; defaultValue: true }
+    ListSettingWithInput { settingKey: "aliases"; fields: [{ id: "alias", ... }, { id: "target", ... }] }
+}
+```
 
 查看加载错误：
 

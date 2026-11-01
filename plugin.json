@@ -2,7 +2,7 @@
     "id": "pinyinAppSearch",
     "name": "Pinyin App Search",
     "description": "Pinyin / initials search for Chinese app names (jsq → 计算器)。纯运行时索引，不改任何 .desktop 文件",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "license": "MIT",
     "author": "DonKongPaPa",
     "icon": "translate",
